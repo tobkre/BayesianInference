@@ -21,6 +21,7 @@ from pdb import set_trace
 import numpy as np
 import pylab
 
+from BayesianInference.utility.lossFunctions.loss import mse_loss
 #np.random.seed(0)
 #torch.manual_seed(0)
 #torch.cuda.manual_seed(0)
@@ -85,15 +86,6 @@ def fit_model_adversarial(criterion, n_epoch, X, Y, n_hid, device, verbose, alph
         loss.backward()
         optimizer.step()
     return model
-
-def mse_loss(y_true, y_hat, sigma=0):
-    return torch.mean(torch.pow(y_true-y_hat,2))
-
-def nll_loss(y_true, y_hat, y_sig):
-    tmp = torch.div(torch.pow(y_true-y_hat,2),2*torch.pow(y_sig,2))
-    loss = torch.sum(torch.div(torch.log(torch.pow(y_sig,2)),2) + tmp)
-#    y_sig = torch.log(1+torch.exp(y_sig)) + 1e-6
-    return loss
 
 def perturb_x(x_nat, y, epsilon, model, criterion):
     model_cp = copy.deepcopy(model)
