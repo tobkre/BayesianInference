@@ -37,13 +37,17 @@ def fit_model(model, x_train, y_train, n_epoch, criterion, learning_rate, normal
 def fit_model_adversarial(model, x_train, y_train, n_epoch, criterion, learning_rate, normalization, device, verbose, alpha=0.5):
         epsilon = 0.01 * (x_train.max()-x_train.min()) 
         model = model.to(device);
-        x_adv = perturb(model, x_train, y_train, criterion, epsilon)
+        
         _x = Variable(torch.FloatTensor(normalization(x_train))).to(device)
-        _x_adv = Variable(torch.FloatTensor(normalization(x_adv))).to(device)
+        
         _y = Variable(torch.FloatTensor(y_train)).to(device)
         optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
         for epoch in range(n_epoch):
             mu, var = model(_x)
+            
+            # generate adversarial example
+            x_adv = perturb(model, x_train, y_train, criterion, epsilon)
+            _x_adv = Variable(torch.FloatTensor(normalization(x_adv))).to(device)
             mu_ad, var_ad = model(_x_adv)
             
 #            sum_of_square=0

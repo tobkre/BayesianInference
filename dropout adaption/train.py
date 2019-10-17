@@ -80,4 +80,4 @@ def fit_model(n_epoch, X, Y):
     return model
     
 model = fit_model(N_EPOCHS, X, Y)
-torch.save(model, 'testmodel_{:.3f}.pkl'.format(S_MAX))
+#torch.save(model, 'testmodel_{:.3f}.pkl'.format(S_MAX))
