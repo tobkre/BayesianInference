@@ -152,7 +152,7 @@ class elsterLearning:
                     mask = np.isin(self.theta, param.data.flatten().cpu().data.numpy())
                     param_delta = torch.ones_like(param.data)
 #                    param_delta = torch.rand_like(param.data)
-                    param.data = param.data + 0.05*param_delta.new_tensor(delta_theta[mask]).view(param.data.size())
+                    param.data = param.data + param_delta.new_tensor(delta_theta[mask]).view(param.data.size())
 #                    param.data = param.data + param.data * param_delta
                 y_p[i,:] = model(torch.FloatTensor(x)).cpu().data.numpy().flatten()
                 print('Model {:.2f} and adjusted {:.2f}'.format(self.model(torch.FloatTensor(x)).cpu().data.numpy().flatten()[0], y_p[i,0]))
@@ -171,7 +171,7 @@ def make_plot(x, y, x_tst, y_tst, y_tst_pred, y_tst_samples, lc, uc, textstr):
     pylab.scatter(x, y, color='r')
     pylab.plot(x_tst, y_tst)
     pylab.plot(x_tst,y_tst_pred)
-    pylab.plot(x_tst, y_tst_samples)
+#    pylab.plot(x_tst, y_tst_samples)
     pylab.fill_between(x_tst.squeeze(), lc.squeeze(), uc.squeeze(), color='gray', alpha=0.5)
     pylab.xlim([-7,7])
     pylab.ylim([-250,250])
@@ -181,11 +181,11 @@ if __name__=='__main__':
     N = 50
     np.random.seed(1)
     
-    lbda = 2.95e+0
-    tau = 5e-4
+    lbda = 2.95e-1
+    tau = 1.5e+1
     
-#    epsilon = np.random.normal(loc=0, scale=1, size=(N,1))*3
-    epsilon=0
+    epsilon = np.random.normal(loc=0, scale=1, size=(N,1))*3
+#    epsilon=0
 #    x = np.sort(np.random.uniform(low=-4., high=4., size=(N,1)), axis=0)
     x = np.linspace(start=-4, stop=4, num=N).reshape((-1,1))
     y = (x)**3 + epsilon
@@ -221,12 +221,15 @@ if __name__=='__main__':
             r'$\left[\sum_{i=1}^L \frac{(\tilde{y_i} - \hat{y_i})^2-\hat{\tau}}{u^2(y_i)}-L\right]^2 = %1.4e$' % (tst1),
             r'$\lambda = %1.2e$' % (tmp.weight_regularizer)))
     
-    lc1 = y_tst_samples1 - y_tst_std1
-    uc1 = y_tst_samples1 + y_tst_std1
+    lc1 = y_tst_pred.squeeze() - y_tst_std1
+    uc1 = y_tst_pred.squeeze() + y_tst_std1
     
     make_plot(x, y, x_tst, y_tst, y_tst_pred, y_tst_samples, lc, uc, textstr)
     make_plot(x, y, x_tst, y_tst, y_tst_pred, y_tst_samples1, lc1, uc1, textstr1)
     
+    pylab.figure()
+    pylab.plot(x_tst, y_tst_pred-y_tst)
+    pylab.fill_between(x_tst.squeeze(), (y_tst_pred-y_tst-y_tst_std1).squeeze(), (y_tst_pred-y_tst+y_tst_std1).squeeze(), color='gray', alpha=0.5)
     print(np.all(U_theta==U_theta1))
 #    pylab.figure()
 #    pylab.imshow(U_theta)
