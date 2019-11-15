@@ -11,9 +11,6 @@ import torch
 from torch.autograd import Variable
 from torch import optim
 
-from easy_model import hidden1
-from ut import training_parameters
-
 import pylab
 
 class elsterLearning:
@@ -178,6 +175,8 @@ def make_plot(x, y, x_tst, y_tst, y_tst_pred, y_tst_samples, lc, uc, textstr):
     pylab.text(-6.8, 150., textstr, fontsize=12)
     
 if __name__=='__main__':
+    from easy_model import hidden1
+    from ut import training_parameters
     N = 50
     np.random.seed(1)
     
@@ -229,7 +228,7 @@ if __name__=='__main__':
     
     pylab.figure()
     pylab.plot(x_tst, y_tst_pred-y_tst)
-    pylab.fill_between(x_tst.squeeze(), (y_tst_pred-y_tst-y_tst_std1).squeeze(), (y_tst_pred-y_tst+y_tst_std1).squeeze(), color='gray', alpha=0.5)
+    pylab.fill_between(x_tst.squeeze(), (y_tst_pred.squeeze()-y_tst.squeeze()-y_tst_std1).squeeze(), (y_tst_pred.squeeze()-y_tst.squeeze()+y_tst_std1).squeeze(), color='gray', alpha=0.5)
     print(np.all(U_theta==U_theta1))
 #    pylab.figure()
 #    pylab.imshow(U_theta)

@@ -10,12 +10,12 @@ from torch.autograd import Variable
 from torch import optim
 import numpy as np
 
-def fit_model(model, x_train, y_train, n_epoch, criterion, learning_rate, normalization, device, verbose):
+def fit_model(model, x_train, y_train, criterion, normalization, device, train_params):
         model = model.to(device)
         _x = Variable(torch.FloatTensor(normalization(x_train))).to(device)
         _y = Variable(torch.FloatTensor(y_train)).to(device)
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-        for epoch in range(n_epoch):
+        optimizer = optim.Adam(model.parameters(), lr=train_params.lr, weight_decay=1e-4)
+        for epoch in range(train_params.n_epochs):
             mu, sig = model(_x)
                         
 #            sum_of_square=0
@@ -26,23 +26,23 @@ def fit_model(model, x_train, y_train, n_epoch, criterion, learning_rate, normal
             
             if torch.isinf(loss):
                 print("Stop")
-            if verbose and (epoch == 0 or epoch % 50 == 0 or epoch == n_epoch-1):
-                print("Epoch {:d}/{:d}, Loss={:.4f}".format(epoch+1,n_epoch,loss))
+            if train_params.verbose and (epoch == 0 or epoch % 50 == 0 or epoch == train_params.n_epochs-1):
+                print("Epoch {:d}/{:d}, Loss={:.4f}".format(epoch+1,train_params.n_epochs,loss))
     #            print("Example: true: {:.3f} guess:{:.3f} +- {:.3f}".format(_y[0].cpu().data.numpy()[0], mu[0].cpu().data.numpy()[0], var[0].cpu().data.numpy()[0]))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         return model
     
-def fit_model_adversarial(model, x_train, y_train, n_epoch, criterion, learning_rate, normalization, device, verbose, alpha=0.5):
+def fit_model_adversarial(model, x_train, y_train, criterion, normalization, device, train_params, alpha=0.5):
         epsilon = 0.01 * (x_train.max()-x_train.min()) 
         model = model.to(device);
         
         _x = Variable(torch.FloatTensor(normalization(x_train))).to(device)
         
         _y = Variable(torch.FloatTensor(y_train)).to(device)
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-        for epoch in range(n_epoch):
+        optimizer = optim.Adam(model.parameters(), lr=train_params.lr, weight_decay=1e-4)
+        for epoch in range(train_params.n_epochs):
             mu, var = model(_x)
             
             # generate adversarial example
@@ -56,8 +56,8 @@ def fit_model_adversarial(model, x_train, y_train, n_epoch, criterion, learning_
             
             loss = alpha * criterion(_y, mu, var) + (1-alpha) * criterion(_y, mu_ad, var_ad) #+ 1e-4*sum_of_square
             
-            if verbose and (epoch == 0 or epoch % 50 == 0 or epoch == n_epoch-1):
-                print("Epoch {:d}/{:d}, Loss={:.4f}".format(epoch+1,n_epoch,loss))
+            if train_params.verbose and (epoch == 0 or epoch % 400 == 0 or epoch == train_params.n_epochs-1):
+                print("Epoch {:d}/{:d}, Loss={:.4f}".format(epoch+1,train_params.n_epochs,loss))
 #                print("Example: true: {:.3f} guess:{:.3f} +- {:.3f}".format(_y[0].cpu().data.numpy()[0], mu[0].cpu().data.numpy()[0], np.sqrt(var[0].cpu().data.numpy())[0]))
             
             optimizer.zero_grad()

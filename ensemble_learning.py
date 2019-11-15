@@ -40,15 +40,16 @@ class ensembleTrainer:
         
         self.adv_training = adv_training
                 
-    def fitEnsemble(self, model_class, model_param, x_train, y_train, n_ep, learning_rate, device, verbose=False):
+    def fitEnsemble(self, model_class, model_param, x_train, y_train, train_params):
         if self.adv_training:
             fit = lambda *args: fit_model_adversarial(*args)
         else:
             fit = lambda *args: fit_model(*args)
         
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         for i in range(self.N):
             model = model_class(model_param)
-            model = fit(model, x_train, y_train, n_ep, self.criterion, learning_rate, self.norm, device, verbose)
+            model = fit(model, x_train, y_train, self.criterion, self.norm, device, train_params)
             self.Ensemble.append(model)
     
     def predict(self, x, device, var='ensemble'):
