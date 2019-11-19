@@ -19,6 +19,8 @@ import numpy as np
 from utility.lossFunctions.loss import mse_loss, nll_loss
 from utility.fitFunctions.fitting import fit_model, fit_model_adversarial
 from utility.models.linearModels import hidden1
+from playground.ut import training_parameters
+
 #np.random.seed(0)
 #torch.manual_seed(0)
 #torch.cuda.manual_seed(0)
@@ -73,7 +75,8 @@ if __name__=='__main__':
     N = 20
     N_EPOCHS = 750
     LR = 0.01
-    
+    train_params = training_parameters(lr=0.01, n_epochs=400, verbose=False)
+
     epsilon = np.random.normal(loc=0, scale=1, size=(N,1))*3
     x = np.sort(np.random.uniform(low=-4., high=4., size=(N,1)), axis=0)
     
@@ -84,7 +87,7 @@ if __name__=='__main__':
     x_tst = np.reshape(x_tst, (-1,1))
     
     ensemble1 = ensembleTrainer(5, loss='nll_loss', adv_training=True)
-    ensemble1.fitEnsemble(hidden1, 500, x, y, N_EPOCHS, LR, device, verbose=True)
+    ensemble1.fitEnsemble(hidden1, 500, x, y, train_params)
     
 #    ensemble1 = ensembleTrainer(5)
 #    ensemble1.fitEnsemble(hidden1, 100, x, y, N_EPOCHS, LR, device, verbose=True)
