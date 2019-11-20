@@ -14,15 +14,15 @@ def fit_model(model, x_train, y_train, criterion, normalization, device, train_p
         model = model.to(device)
         _x = Variable(torch.FloatTensor(normalization(x_train))).to(device)
         _y = Variable(torch.FloatTensor(y_train)).to(device)
-        optimizer = optim.Adam(model.parameters(), lr=train_params.lr, weight_decay=1e-4)
+        optimizer = optim.Adam(model.parameters(), lr=train_params.lr)
         for epoch in range(train_params.n_epochs):
-            mu, sig = model(_x)
+            mu, logvar, reg = model(_x)
                         
 #            sum_of_square=0
 #            for param in model.parameters():
 #                sum_of_square += torch.sum(torch.pow(param, 2))
             
-            loss = criterion(_y, mu, sig) #+ 1e-4*sum_of_square
+            loss = criterion(_y, mu, logvar) + reg #+ 1e-4*sum_of_square
             
             if torch.isinf(loss):
                 print("Stop")
@@ -48,19 +48,19 @@ def fit_model_adversarial(model, x_train, y_train, criterion, normalization, dev
         _y_adv = Variable(torch.FloatTensor(y_train_adv)).to(device)
         optimizer = optim.Adam(model.parameters(), lr=train_params.lr, weight_decay=1e-4)
         for epoch in range(train_params.n_epochs):
-            mu, var = model(_x)
+            mu, logvar, reg = model(_x)
             
             # generate adversarial example
             x_adv = perturb(model, x_train_adv, y_train_adv, criterion, epsilon)
             _x_adv = Variable(torch.FloatTensor(normalization(x_adv))).to(device)
             
-            mu_ad, var_ad = model(_x_adv)
+            mu_ad, logvar_ad, reg_ad = model(_x_adv)
             
 #            sum_of_square=0
 #            for param in model.parameters():
 #                sum_of_square += torch.sum(torch.pow(param, 2))
             
-            loss = alpha * criterion(_y, mu, var) + (1-alpha) * criterion(_y_adv, mu_ad, var_ad) #+ 1e-4*sum_of_square
+            loss = alpha * criterion(_y, mu, logvar) + (1-alpha) * criterion(_y_adv, mu_ad, logvar_ad) + reg + reg_ad
             
             if train_params.verbose and (epoch == 0 or epoch % 400 == 0 or epoch == train_params.n_epochs-1):
                 print("Epoch {:d}/{:d}, Loss={:.4f}".format(epoch+1,train_params.n_epochs,loss))
@@ -77,7 +77,7 @@ def perturb(model, x_train, y_train, criterion, epsilon):
         x_var = Variable(torch.FloatTensor(x), requires_grad=True)
         y_var = Variable(torch.FloatTensor(y_train))
     
-        scores, sigmas = model_cp(x_var)
+        scores, sigmas,_ = model_cp(x_var)
         loss = criterion(y_var, scores, sigmas)
         loss.backward()
         grad_sign = x_var.grad.data.cpu().sign().numpy()

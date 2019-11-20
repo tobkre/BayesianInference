@@ -6,10 +6,7 @@ Created on Wed Oct 16 10:40:27 2019
 """
 import torch
 
-def mse_loss(y_true, y_hat, sigma=0):
-    return torch.mean(torch.pow(y_true-y_hat,2))
 
-def nll_loss(y_true, y_hat, y_sig):
-    tmp = torch.div(torch.pow(y_true-y_hat,2),2*torch.pow(y_sig,2))
-    loss = torch.sum(torch.div(torch.log(torch.pow(y_sig,2)),2) + tmp)
-    return loss
+def nll_loss(y_true, y_hat, logvar):
+    ls = 0.5 * torch.exp(-logvar) * torch.pow(y_true-y_hat,2)
+    return (ls + 0.5*logvar).sum()
