@@ -146,15 +146,15 @@ class elsterLearning:
                     param.data = param.data + param_delta.new_tensor(delta_theta[mask]).view(param.data.size())
 #                    param.data = param.data + param.data * param_delta
                 y_p[i,:] = model(torch.FloatTensor(x))[0].cpu().data.numpy().flatten()
-                print('Model {:.2f} and adjusted {:.2f}'.format(self.model(torch.FloatTensor(x))[0].cpu().data.numpy().flatten()[0], y_p[i,0]))
+#                print('Model {:.2f} and adjusted {:.2f}'.format(self.model(torch.FloatTensor(x))[0].cpu().data.numpy().flatten()[0], y_p[i,0]))
             u_square = np.std(y_p, 0)
             y_p_m = np.mean(y_p, 0)
-            print('{:.4f} +- {:.4f}'.format(y_p_m[0], u_square[0]))
+#            print('{:.4f} +- {:.4f}'.format(y_p_m[0], u_square[0]))
         return y_p_m, u_square, U_theta
 
 def get_dev(y_t, y_p, y_std, tau):
     l = len(y_p)
-    dev = (np.sum(((y_t-y_p)**2-tau**(-1))/y_std**2)-l)**2
+    dev = (np.sum(((y_t.squeeze()-y_p.squeeze())**2-tau**(-1))/y_std.squeeze()**2)-l)**2
     return dev
 
 def make_plot(x, y, x_tst, y_tst, y_tst_pred, y_tst_samples, lc, uc, textstr):
@@ -174,16 +174,17 @@ if __name__=='__main__':
     N = 50
     np.random.seed(1)
     
-    lbda = 1.95e-1
-    tau = 0.35e+1
+#    lbda = 1.95e-1
+    lbda = 1.95e-4
+    tau = 0.35e+3
     
     epsilon = np.random.normal(loc=0, scale=1, size=(N,1))*3
 #    epsilon=0
-#    x = np.sort(np.random.uniform(low=-4., high=4., size=(N,1)), axis=0)
-    x = np.linspace(start=-4, stop=4, num=N).reshape((-1,1))
+    x = np.sort(np.random.uniform(low=-4., high=4., size=(N,1)), axis=0)
+#    x = np.linspace(start=-4, stop=4, num=N).reshape((-1,1))
     y = (x)**3 + epsilon
     
-    x_tilde = np.sort(np.random.uniform(low=-4., high=4., size=(N,1)), axis=0)
+    x_tilde = np.linspace(start=-4, stop=4, num=N).reshape((-1,1))
     y_tilde = x_tilde**3 + epsilon
         
     x_tst = np.linspace(start=-6, stop=6, num=100).reshape((-1,1))
@@ -196,6 +197,11 @@ if __name__=='__main__':
     tmp.train(hidden1, 100, x, y, train_params)
     
     y_tst_pred = tmp.predict(x_tst)
+    
+    y_tilde_hat, y_tilde_std, _ = tmp.sample_predict1(x_tilde, y_tilde, tau=tau)
+    eps_tilde = get_dev(y_tilde, y_tilde_hat, y_tilde_std, tau)
+    print('Lambda={:.2e}, tau={:.2e}'.format(lbda, tau))
+    print('epsilon = {:.2e}'.format(eps_tilde))
     
     y_tst_samples, y_tst_std, U_theta = tmp.sample_predict(x_tst, y_tst, tau=tau)
     tst = get_dev(y_tst, y_tst_samples, y_tst_std, tau)

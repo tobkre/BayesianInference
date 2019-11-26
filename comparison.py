@@ -46,7 +46,7 @@ if __name__=='__main__':
     N = 50
     n_neurons = 100
     
-    train_params = training_parameters(lr=0.01, n_epochs=2000, verbose=False)
+    train_params = training_parameters(lr=0.05, n_epochs=2000, verbose=False)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     lbda = 1.95e-1
@@ -72,13 +72,13 @@ if __name__=='__main__':
     
     make_plot(x_train, y_train, x_tst, y_tst, y_tst_pred, y_tst_samples, y_tst_std)
     
-    ens = ensembleTrainer(20, weight_regularizer=lbda, noise='homoscedastic', adv_training=True)
+    ens = ensembleTrainer(20, weight_regularizer=1.95e-2, noise='heteroscedastic', adv_training=True)
     ens.fitEnsemble(h1, n_neurons, x_train, y_train, train_params)
     mu_5, sig_5, mus_5, _ = ens.predict(x_tst, device)
     
     make_plot(x_train, y_train, x_tst, y_tst, mu_5, mu_5, sig_5)
     
-    model_conc = myNet(n_neurons, p_init=5.4e-01, train_p=False)
+    model_conc = myNet(n_neurons, p_init=2.4e-01, train_p=True)
     conc = concreteLearning(model_conc)
     conc.train(x_train, y_train, train_params)
     

@@ -41,6 +41,7 @@ class ensembleTrainer:
         self.weight_regularizer = weight_regularizer
                 
     def fitEnsemble(self, model_class, model_param, x_train, y_train, train_params):
+        print('Start Ensemble Training')
         if self.adv_training:
             fit = lambda *args: fit_model_adversarial(*args)
         else:
@@ -48,6 +49,7 @@ class ensembleTrainer:
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         for i in range(self.N):
+            print('Train Model {:d} of {:d}'.format(i+1, self.N))
             model = model_class(model_param, weight_regularizer=self.weight_regularizer, noise=self.noise)
             model = fit(model, x_train, y_train, nll_loss, self.norm, device, train_params)
             self.Ensemble.append(model)
@@ -56,7 +58,8 @@ class ensembleTrainer:
         XTest = x
         Samples = [self.Ensemble[i](torch.FloatTensor(XTest).to(device)) for i in range(self.N)]
         muTest = torch.stack([tup[0] for tup in Samples]).view(self.N,XTest.shape[0]).cpu().data.numpy()
-        sigTest = torch.stack([tup[1] for tup in Samples]).view(self.N,XTest.shape[0]).cpu().data.numpy()
+        logvarTest = torch.stack([tup[1] for tup in Samples]).view(self.N,XTest.shape[0])
+        sigTest = np.sqrt(torch.exp(logvarTest).cpu().data.numpy())
         muEnsemble = (1/self.N * np.sum(muTest, axis=0)).squeeze()
 #        varEnsemble = (1/self.N * np.sum(sigTest**2 + muTest**2-muEnsemble**2, axis=0)).squeeze()        
         varEnsemble = (1/self.N*(np.sum(sigTest**2 + muTest**2,0))-muEnsemble**2).squeeze()        
@@ -70,7 +73,7 @@ if __name__=='__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     N = 50
 
-    train_params = training_parameters(lr=0.1, n_epochs=100, verbose=False)
+    train_params = training_parameters(lr=0.05, n_epochs=400, verbose=False)
 
     epsilon = np.random.normal(loc=0, scale=1, size=(N,1))*3
     x = np.sort(np.random.uniform(low=-4., high=4., size=(N,1)), axis=0)
@@ -80,18 +83,19 @@ if __name__=='__main__':
     x_tst = np.linspace(start=-6., stop=6., num=100).reshape((-1,1))
     y_tst = x_tst**3
     
-    ensemble1 = ensembleTrainer(5, weight_regularizer=1.95e-2, noise='heteroscedastic', adv_training=False)
+    ensemble1 = ensembleTrainer(20, weight_regularizer=1.95e-2, noise='heteroscedastic', adv_training=True)
     ensemble1.fitEnsemble(hidden1, 100, x, y, train_params)
     
 #    ensemble1 = ensembleTrainer(5)
 #    ensemble1.fitEnsemble(hidden1, 100, x, y, N_EPOCHS, LR, device, verbose=True)
     
-    mu_MSE_5_NOAD, sig_MSE_5_NOAD, mus_MSE_5_NOAD, _ = ensemble1.predict(x_tst, device)
-    
+    mu, sig, mus, _ = ensemble1.predict(x_tst, device)
+    mu_std = np.std(mus, 0).squeeze()
     pylab.figure()
     pylab.plot(x_tst, y_tst)
-    pylab.scatter(x, y)
-    pylab.errorbar(x_tst, mu_MSE_5_NOAD, sig_MSE_5_NOAD)
+    pylab.scatter(x, y, color='r')
+    pylab.errorbar(x_tst, mu, sig)
+    pylab.fill_between(x_tst.squeeze(), (mu-mu_std).squeeze(), (mu+mu_std).squeeze(), color='gray', alpha=0.5)
     pylab.xlim([-6.1,6.1])
     pylab.ylim([-6.1**3,6.1**3])
 #    pylab.plot(x_tst, mus_MSE_5_NOAD.T)
